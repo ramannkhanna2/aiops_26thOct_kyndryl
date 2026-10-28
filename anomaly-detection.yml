@@ -1,0 +1,61 @@
+name: AIOps anomaly detection
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  anomaly-detection:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Explore metrics
+        run: python scripts/explore_metrics.py
+
+      - name: Run rule-based detection
+        run: python scripts/rule_based_detection.py
+
+      - name: Run machine-learning detection
+        run: python scripts/ml_anomaly_detection.py
+
+      - name: Compare detection results
+        run: python scripts/compare_results.py
+
+      - name: Create anomaly visualization
+        run: python scripts/visualize_anomalies.py
+
+      - name: Generate investigation report
+        run: python scripts/generate_anomaly_report.py
+
+      - name: Upload anomaly results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anomaly-detection-results
+          path: |
+            data/processed/rule_based_results.csv
+            data/processed/ml_anomaly_results.csv
+            data/processed/anomaly_comparison.csv
+            data/processed/anomaly_scatter.png
+            data/processed/anomaly_investigation_report.txt
+          if-no-files-found: warn
+          retention-days: 14
